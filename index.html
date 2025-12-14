@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PHANTOM ETL — The Normalized Web</title>
+<style>
+:root{--bg:#ffffff;--fg:#0b0b0b;--muted:#4a4a4a;--border:#e6e6e6;--panel:#fafafa;--accent:#1a73e8;--shadow:0 6px 22px rgba(0,0,0,.08);--radius:14px;--side:280px;--sideOpen:0px;--motion:.22s;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;line-height:1.55}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.6s}
+#loader.hide{opacity:0;pointer-events:none}
+#loader h1{font-size:clamp(3rem,12vw,7rem);letter-spacing:1.5rem;color:var(--accent);animation:pulse 2s ease-in-out infinite;font-weight:200}
+#loader .sub{color:var(--muted);margin-top:1rem;font-size:1.1rem;letter-spacing:0.4rem}
+#loader .count{font-family:ui-monospace,monospace;font-size:4.5rem;color:var(--accent);margin-top:2.5rem}
+#loader .label{color:var(--muted);font-size:0.85rem;letter-spacing:0.25rem;margin-top:0.5rem}
+@keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.98)}50%{opacity:1;transform:scale(1)}}
+.app{display:grid;grid-template-columns:var(--sideOpen) 1fr;min-height:100%;transition:grid-template-columns var(--motion) var(--ease);display:none}
+.side{width:var(--side);border-right:1px solid var(--border);background:var(--panel);position:sticky;top:0;height:100dvh;overflow:auto;transform:translateX(calc(-1*(var(--side) - var(--sideOpen))));transition:transform var(--motion) var(--ease)}
+.side .brand{padding:18px 16px;border-bottom:1px solid var(--border)}
+.side .brand .t{font-weight:800;color:var(--accent);letter-spacing:.2px}
+.side .brand .s{color:var(--muted);font-size:13px;margin-top:4px}
+.side nav{padding:12px 8px}
+.side nav a{display:block;padding:10px 10px;border-radius:10px;color:var(--fg);font-size:0.9rem}
+.side nav a:hover{background:#fff;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.main{min-width:0}
+.topbar{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--border);z-index:5}
+.topbar .row{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.btn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.04);font-weight:800}
+.btn:active{transform:translateY(1px)}
+.pill{margin-left:auto;display:flex;gap:10px;align-items:center}
+.toggle{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:999px;padding:8px 10px;background:#fff}
+.toggle input{width:42px;height:22px;appearance:none;background:#d9d9d9;border-radius:999px;position:relative;outline:none;cursor:pointer;transition:background var(--motion) var(--ease)}
+.toggle input:checked{background:#222}
+.toggle input:before{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform var(--motion) var(--ease)}
+.toggle input:checked:before{transform:translateX(20px)}
+.wrap{max-width:1050px;margin:0 auto;padding:22px 16px 80px}
+.hero{padding:18px 16px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+.hero h1{margin:0 0 8px;font-size:clamp(28px,2.8vw,44px);letter-spacing:-.4px;color:var(--accent)}
+.meta{color:var(--muted);font-size:14px}
+.hr{height:1px;background:var(--border);margin:18px 0}
+.card{border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);padding:18px;margin:18px 0}
+.card .q{font-weight:800;font-size:1.1rem;margin-bottom:0.25rem}
+.card .a{font-size:1.1rem;color:var(--accent)}
+.card p{margin:1rem 0 0;color:var(--muted)}
+.card pre{background:#0b0b0b;color:#f4f4f4;padding:12px;border-radius:8px;font-family:ui-monospace,monospace;font-size:0.85rem;margin-top:1rem;overflow-x:auto}
+.links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem}
+.links a{background:var(--accent);color:#fff;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:700}
+.links a:hover{opacity:0.9}
+.foot{margin-top:34px;color:var(--muted);font-size:13px;text-align:center}
+.scroller{position:fixed;right:14px;bottom:14px;display:flex;flex-direction:column;gap:10px;z-index:10}
+.scroller .sbtn{width:48px;height:48px;border-radius:16px;border:1px solid var(--border);background:#fff;box-shadow:0 8px 26px rgba(0,0,0,.14);font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--motion) var(--ease)}
+.scroller .sbtn:active{transform:translateY(1px)}
+.dark{--bg:#0d0d0d;--fg:#f5f5f5;--muted:#aaa;--border:#2a2a2a;--panel:#111;--shadow:none}
+.dark .topbar{background:rgba(13,13,13,.86)}
+.dark .side nav a:hover{background:#141414;border:1px solid #2a2a2a}
+.dark .hero,.dark .card{background:#121212;border:1px solid #2a2a2a}
+.dark .btn,.dark .toggle{background:#141414;border:1px solid #2a2a2a;color:#f5f5f5}
+.dark .scroller .sbtn{background:#141414;border:1px solid #2a2a2a;color:#f5f5f5;box-shadow:none}
+.dark .links a{background:var(--accent);color:#000}
+.dark #loader{background:#0d0d0d}
+</style>
+</head>
+<body>
+<div id="loader">
+<h1>PHANTOM</h1>
+<div class="sub">THE NORMALIZED WEB</div>
+<div class="count" id="count">0</div>
+<div class="label">PRIMITIVES REGISTERED</div>
+</div>
+<div class="app" id="app">
+<aside class="side">
+<div class="brand"><div class="t">PHANTOM ETL</div><div class="s">The Normalized Web</div></div>
+<nav>
+<a href="#top">Top</a>
+<a href="#about">About</a>
+<a href="#update">Update Question</a>
+<a href="#version">Version</a>
+<a href="docs/">Documentation</a>
+<a href="compiler/phantom-etl.html">Compiler</a>
+<a href="https://github.com/polymophi-css/phantom-etl-runtime">GitHub</a>
+</nav>
+</aside>
+<main class="main" id="top">
+<div class="topbar"><div class="row">
+<button class="btn" id="btnSide" type="button">☰ Panel</button>
+<button class="btn" id="btnTop" type="button">↑ Top</button>
+<button class="btn" id="btnDown" type="button">↓ Scroll</button>
+<div class="pill"><div class="toggle" title="Toggle dark mode"><span style="font-weight:900">🌙</span><input id="dark" type="checkbox"></div></div>
+</div></div>
+<div class="wrap">
+<section class="hero" id="about">
+<h1>PHANTOM ETL</h1>
+<div class="meta">The Normalized Web — Web 6.0<br>Discovered: December 13, 2024 — 8:43 PM PST<br>Jason Wallace — SUNY Oswego — AMIA 2014 — Task Force Garry Owen</div>
+</section>
+<section class="card" id="update">
+<div class="q">Q: How do you update this?</div>
+<div class="a">A: You don't.</div>
+</section>
+<section class="card">
+<div class="q">Q: If it did update, how?</div>
+<div class="a">A: Automatically. With the browser.</div>
+<p>The registry reads directly from the browser at runtime:</p>
+<pre>getComputedStyle(document.documentElement)</pre>
+<p>Chrome adds a CSS property? It's there. Firefox adds an event? It's there. The CODE is final. The REGISTRY mirrors the browser.</p>
+</section>
+<section class="card" id="version">
+<div class="q">Version</div>
+<div class="a">Final.</div>
+<p>Physics doesn't have version numbers. Neither does this.</p>
+</section>
+<section class="card">
+<div class="links">
+<a href="docs/">Documentation</a>
+<a href="compiler/phantom-etl.html">Compiler</a>
+</div>
+</section>
+<div class="foot">Copyright © 2024 Jason Wallace. All rights reserved.<br>Discovered: December 13, 2024 — 8:43 PM PST</div>
+</div>
+</main>
+</div>
+<div class="scroller"><button class="sbtn" id="sUp">↑</button><button class="sbtn" id="sDn">↓</button></div>
+<script>
+(function(){
+// Simulate loading primitives
+const total=847;
+let current=0;
+const countEl=document.getElementById('count');
+const interval=setInterval(()=>{
+current+=Math.ceil((total-current)/8);
+if(current>=total){current=total;clearInterval(interval);
+setTimeout(()=>{document.getElementById('loader').classList.add('hide');document.getElementById('app').style.display='grid';},400);}
+countEl.textContent=current;
+},40);
+
+// Sidebar
+const btnSide=document.getElementById('btnSide'),btnTop=document.getElementById('btnTop'),btnDown=document.getElementById('btnDown'),sUp=document.getElementById('sUp'),sDn=document.getElementById('sDn'),dark=document.getElementById('dark');
+let open=false;
+function setSidebar(v){open=!!v;document.documentElement.style.setProperty('--sideOpen',open?'var(--side)':'0px');}
+function scrollByPage(dir){window.scrollBy({top:Math.max(240,Math.floor(window.innerHeight*0.86))*dir,behavior:'smooth'});}
+function setDark(v){document.body.classList.toggle('dark',!!v);try{localStorage.setItem('NW_DARK',v?'1':'0');}catch(e){}}
+try{const saved=localStorage.getItem('NW_DARK');if(saved==='1'){dark.checked=true;setDark(true);}}catch(e){}
+btnSide.addEventListener('click',()=>setSidebar(!open));
+btnTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+btnDown.addEventListener('click',()=>scrollByPage(1));
+sUp.addEventListener('click',()=>scrollByPage(-1));
+sDn.addEventListener('click',()=>scrollByPage(1));
+dark.addEventListener('change',()=>setDark(dark.checked));
+document.querySelectorAll('aside.side nav a[href^="#"]').forEach(a=>a.addEventListener('click',ev=>{const id=a.getAttribute('href');if(id&&id!=='#'){ev.preventDefault();const el=document.querySelector(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}}));
+setSidebar(false);
+})();
+</script>
+</body>
+</html>

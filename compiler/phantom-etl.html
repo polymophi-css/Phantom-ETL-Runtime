@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NECTAR.JS | Sovereign Compiler</title>
+<style>
+:root{--bg:#ffffff;--fg:#0b0b0b;--muted:#4a4a4a;--border:#e6e6e6;--panel:#fafafa;--accent:#1a73e8;--shadow:0 6px 22px rgba(0,0,0,.08);--radius:14px;--side:280px;--sideOpen:0px;--motion:.22s;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;line-height:1.55}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.app{display:grid;grid-template-columns:var(--sideOpen) 1fr;min-height:100%;transition:grid-template-columns var(--motion) var(--ease)}
+.side{width:var(--side);border-right:1px solid var(--border);background:var(--panel);position:sticky;top:0;height:100dvh;overflow:auto;transform:translateX(calc(-1*(var(--side) - var(--sideOpen))));transition:transform var(--motion) var(--ease)}
+.side .brand{padding:18px 16px;border-bottom:1px solid var(--border)}
+.side .brand .t{font-weight:800;color:var(--accent);letter-spacing:.2px}
+.side .brand .s{color:var(--muted);font-size:13px;margin-top:4px}
+.side nav{padding:12px 8px}
+.side nav a{display:block;padding:10px 10px;border-radius:10px;color:var(--fg);font-size:0.9rem}
+.side nav a:hover{background:#fff;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.main{min-width:0}
+.topbar{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--border);z-index:5}
+.topbar .row{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.btn{appearance:none;border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 12px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.04);font-weight:800}
+.btn:active{transform:translateY(1px)}
+.pill{margin-left:auto;display:flex;gap:10px;align-items:center}
+.toggle{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:999px;padding:8px 10px;background:#fff}
+.toggle input{width:42px;height:22px;appearance:none;background:#d9d9d9;border-radius:999px;position:relative;outline:none;cursor:pointer;transition:background var(--motion) var(--ease)}
+.toggle input:checked{background:#222}
+.toggle input:before{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform var(--motion) var(--ease)}
+.toggle input:checked:before{transform:translateX(20px)}
+.wrap{max-width:1050px;margin:0 auto;padding:22px 16px 80px}
+h1{color:var(--accent);margin-bottom:0.5rem;font-size:1.25rem}
+h2{color:var(--muted);font-size:0.8rem;margin-bottom:1rem;font-weight:normal}
+#console{background:#0b0b0b;color:#0f0;padding:1rem;font-family:ui-monospace,monospace;font-size:0.65rem;height:200px;overflow-y:auto;border-radius:8px;margin-bottom:1rem;border:1px solid var(--border)}
+#console .warn{color:#ff0}
+#console .error{color:#f00}
+#console .info{color:#0ff}
+.controls{margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap}
+.controls button{background:var(--accent);color:#fff;border:none;padding:0.5rem 1rem;cursor:pointer;font-family:ui-monospace,monospace;font-size:0.75rem;border-radius:8px;font-weight:700}
+.controls button:hover{opacity:0.9}
+.controls button:disabled{opacity:0.3}
+#output{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem}
+#output h3{color:var(--accent);font-size:0.8rem;margin-bottom:0.5rem}
+#output textarea{width:100%;height:120px;background:#0b0b0b;color:#0f0;border:1px solid var(--border);font-family:ui-monospace,monospace;font-size:0.6rem;padding:0.5rem;border-radius:4px}
+#render-frame{width:100%;height:400px;border:1px solid var(--border);background:#fff;border-radius:8px}
+.stats{background:var(--panel);padding:0.5rem 1rem;border-radius:8px;font-family:ui-monospace,monospace;font-size:0.7rem;margin-bottom:1rem;border:1px solid var(--border)}
+.input-section{margin-bottom:1rem}
+.input-section label{display:block;font-weight:700;margin-bottom:0.5rem;color:var(--accent)}
+.input-section textarea{width:100%;height:150px;background:#fff;color:var(--fg);border:1px solid var(--border);font-family:ui-monospace,monospace;font-size:0.7rem;padding:0.75rem;border-radius:8px;resize:vertical}
+.scroller{position:fixed;right:14px;bottom:14px;display:flex;flex-direction:column;gap:10px;z-index:10}
+.scroller .sbtn{width:48px;height:48px;border-radius:16px;border:1px solid var(--border);background:#fff;box-shadow:0 8px 26px rgba(0,0,0,.14);font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform var(--motion) var(--ease)}
+.scroller .sbtn:active{transform:translateY(1px)}
+.foot{margin-top:34px;color:var(--muted);font-size:13px;text-align:center}
+.dark{--bg:#0d0d0d;--fg:#f5f5f5;--muted:#aaa;--border:#2a2a2a;--panel:#111;--shadow:none}
+.dark .topbar{background:rgba(13,13,13,.86)}
+.dark .side nav a:hover{background:#141414;border:1px solid #2a2a2a}
+.dark .btn,.dark .toggle{background:#141414;border:1px solid #2a2a2a;color:#f5f5f5}
+.dark .scroller .sbtn{background:#141414;border:1px solid #2a2a2a;color:#f5f5f5;box-shadow:none}
+.dark .input-section textarea{background:#141414;color:#f5f5f5;border:1px solid #2a2a2a}
+.dark #output{background:#141414;border:1px solid #2a2a2a}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<aside class="side">
+<div class="brand"><div class="t">PHANTOM ETL</div><div class="s">Sovereign Compiler</div></div>
+<nav>
+<a href="#top">Top</a>
+<a href="../">← Home</a>
+<a href="../docs/">Documentation</a>
+<a href="https://github.com/polymophi-css/phantom-etl-runtime">GitHub</a>
+</nav>
+</aside>
+<main class="main" id="top">
+<div class="topbar"><div class="row">
+<button class="btn" id="btnSide" type="button">☰ Panel</button>
+<button class="btn" id="btnTop" type="button">↑ Top</button>
+<button class="btn" id="btnDown" type="button">↓ Scroll</button>
+<div class="pill"><div class="toggle" title="Toggle dark mode"><span style="font-weight:900">🌙</span><input id="dark" type="checkbox"></div></div>
+</div></div>
+<div class="wrap">
+<h1>NECTAR.JS v2.1.0 | Sovereign Compiler</h1>
+<h2>HTML → Encrypted Token Sequence → Self-Unlocking HTML</h2>
+<div class="input-section">
+<label>HTML Source (paste your own or use Google default)</label>
+<textarea id="html-input"></textarea>
+</div>
+<div id="console"></div>
+<div class="controls">
+<button onclick="compileHTML()">1. Compile</button>
+<button onclick="downloadAutogenesis()" id="btn-download" disabled>2. Download Autogenesis HTML</button>
+<button onclick="testUnlock()" id="btn-test" disabled>3. Test Unlock</button>
+</div>
+<div class="stats" id="stats">Ready. Paste HTML above or use Google default.</div>
+<div id="output" style="display:none">
+<h3>User Key (SAVE THIS)</h3>
+<textarea id="user-key-output" readonly></textarea>
+</div>
+<iframe id="render-frame" style="display:none"></iframe>
+<div class="foot">Discovered: December 13, 2024 — 8:43 PM PST · Jason Wallace</div>
+</div>
+</main>
+</div>
+<div class="scroller"><button class="sbtn" id="sUp">↑</button><button class="sbtn" id="sDn">↓</button></div>
+
+<script>
+const _con=document.getElementById('console');
+const _log=(t,a)=>{const d=document.createElement('div');d.className=t;d.textContent=`[${new Date().toISOString().split('T')[1].split('.')[0]}] ${Array.from(a).map(x=>typeof x==='object'?(JSON.stringify(x).substring(0,200)):x).join(' ')}`;_con.appendChild(d);_con.scrollTop=_con.scrollHeight;};
+console.log=(...a)=>{_log('log',a);};
+console.warn=(...a)=>{_log('warn',a);};
+console.error=(...a)=>{_log('error',a);};
+console.info=(...a)=>{_log('info',a);};
+</script>
+
+<script>
+// NECTAR.JS v2.1.0 RUNTIME (MINIFIED)
+(function(g){'use strict';
+const _buf=new Uint8Array(4096);let _off=4096;const _alph='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const _rid=(n=16)=>{if(_off+n>4096){crypto.getRandomValues(_buf);_off=0;}let s='';for(let i=0;i<n;i++)s+=_alph[_buf[_off++]&61];return s;};
+const _rbytes=(n)=>{const b=new Uint8Array(n);crypto.getRandomValues(b);return b;};
+const _b64e=(bytes)=>btoa(String.fromCharCode(...bytes));
+const _b64d=(str)=>new Uint8Array(atob(str).split('').map(c=>c.charCodeAt(0)));
+const _hex=(bytes)=>[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');
+const _sha256=async(data)=>{const enc=new TextEncoder();const buf=await crypto.subtle.digest('SHA-256',enc.encode(data));return _hex(new Uint8Array(buf));};
+const _deriveKey=async(combined32,salt)=>{const enc=new TextEncoder();const km=await crypto.subtle.importKey('raw',enc.encode(combined32.toString(16).padStart(8,'0')),'PBKDF2',false,['deriveBits','deriveKey']);return await crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:10000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);};
+const _encrypt=async(pt,key,iv)=>{const enc=new TextEncoder();const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,enc.encode(pt));return new Uint8Array(ct);};
+const _decrypt=async(ct,key,iv)=>{const dec=new TextDecoder();const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,ct);return dec.decode(pt);};
+const _tags=()=>new Set(['div','span','p','a','img','ul','ol','li','table','tr','td','th','thead','tbody','tfoot','form','input','button','select','option','textarea','label','h1','h2','h3','h4','h5','h6','header','footer','nav','main','section','article','aside','figure','figcaption','video','audio','source','canvas','svg','path','script','style','link','meta','title','br','hr','pre','code','blockquote','iframe','embed','object','details','summary','dialog','template','slot','picture','track','html','head','body','strong','em','b','i','u','s','small','mark','sub','sup','abbr','cite','q','dfn','time','var','samp','kbd','data','ruby','rt','rp','bdi','bdo','wbr','area','map','col','colgroup','caption','fieldset','legend','datalist','output','progress','meter','menu','g-menu','g-menu-item','doctype']);
+const _css=()=>{if(typeof document==='undefined')return new Set();const s=getComputedStyle(document.documentElement);const p=new Set();for(let i=0;i<s.length;i++)p.add(s[i]);return p;};
+const _evt=()=>new Set(['click','dblclick','mousedown','mouseup','mousemove','mouseenter','mouseleave','mouseover','mouseout','contextmenu','keydown','keyup','keypress','focus','blur','input','change','submit','reset','scroll','resize','load','unload','error','abort','DOMContentLoaded','touchstart','touchend','touchmove','touchcancel','pointerdown','pointerup','pointermove','pointerenter','pointerleave','wheel','drag','dragstart','dragend','dragenter','dragleave','dragover','drop','copy','cut','paste','animationstart','animationend','transitionend']);
+const _attr=()=>new Set(['id','class','style','src','href','alt','title','name','value','type','placeholder','disabled','readonly','required','checked','selected','multiple','autofocus','autocomplete','action','method','target','rel','role','aria-label','aria-hidden','aria-expanded','aria-controls','aria-describedby','tabindex','contenteditable','draggable','spellcheck','lang','dir','hidden','width','height','min','max','step','pattern','maxlength','minlength','accept','for','colspan','rowspan','scope','headers','download','ping','referrerpolicy','loading','decoding','crossorigin','integrity','novalidate','nonce','charset','content','itemprop','jscontroller','jsaction','jsname','jsdata','data-ved','data-bucket']);
+const _realm=(function(){
+let _fwd=new Map(),_rev=new Map(),_scepter=null,_blueprints=new Map(),_sequences=new Map(),_events=new Map(),_inventoried=false;
+const _inventory=()=>{if(_inventoried)return;_tags().forEach(t=>{const r=_rid();_fwd.set('tag:'+t,r);_rev.set(r,'tag:'+t);});_css().forEach(p=>{const r=_rid();_fwd.set('css:'+p,r);_rev.set(r,'css:'+p);});_evt().forEach(e=>{const r=_rid();_fwd.set('evt:'+e,r);_rev.set(r,'evt:'+e);});_attr().forEach(a=>{const r=_rid();_fwd.set('attr:'+a,r);_rev.set(r,'attr:'+a);});_inventoried=true;};
+const _verify=(s)=>s===_scepter;
+const _freeze=()=>JSON.stringify({fwd:Array.from(_fwd.entries()),rev:Array.from(_rev.entries())});
+const _thaw=(json)=>{const d=JSON.parse(json);_fwd=new Map(d.fwd);_rev=new Map(d.rev);_inventoried=true;};
+const _knock=async(creds)=>{if(!creds||!creds.auth)return null;if(creds.manifest&&creds.userKey){const result=await _consume(creds.manifest,creds.userKey);return result?result.scepter:null;}_inventory();_scepter=Symbol('scepter');return _scepter;};
+const _tokenize=(s,str)=>{if(!_verify(s))return null;const ids=[];let i=0;while(i<str.length){let found=false;for(let len=20;len>0;len--){const sub=str.substring(i,i+len);const rid=_fwd.get('tag:'+sub)||_fwd.get('css:'+sub)||_fwd.get('attr:'+sub)||_fwd.get('evt:'+sub);if(rid){ids.push(rid);i+=len;found=true;break;}}if(!found){ids.push('c:'+str.charCodeAt(i));i++;}}return ids;};
+const _hydrate=(s,ids)=>{if(!_verify(s))return null;return ids.map(id=>{if(typeof id==='string'&&id.startsWith('c:'))return String.fromCharCode(parseInt(id.slice(2)));const real=_rev.get(id);return real?real.split(':')[1]:'';}).join('');};
+const _compile=(s,name,tmpl,actions={})=>{if(!_verify(s))return null;const bp={id:_rid(),template:_tokenize(s,tmpl),actions:{}};Object.entries(actions).forEach(([k,v])=>{bp.actions[k]=v.map(a=>({prop:_fwd.get('css:'+a.prop)||a.prop,val:typeof a.val==='string'?_tokenize(s,a.val):a.val}));});_blueprints.set(name,bp);return bp;};
+const _sequence=(s,name,steps)=>{if(!_verify(s))return null;_sequences.set(name,steps);return steps;};
+const _build=async(s)=>{if(!_verify(s))return null;console.log('[BUILD] Freezing realm...');const frozen=_freeze();const realmHash=await _sha256(frozen);console.log('[BUILD] Realm size:',frozen.length,'bytes');console.log('[BUILD] Generating split key...');const kb=_rbytes(4);const fullKey=(kb[0]<<24)|(kb[1]<<16)|(kb[2]<<8)|kb[3];const fileKey=(fullKey>>>16)&0xFFFF;const userKey=fullKey&0xFFFF;console.log('[BUILD] Deriving AES-256...');const salt=_rbytes(16);const iv=_rbytes(12);const aesKey=await _deriveKey(fullKey,salt);console.log('[BUILD] Encrypting...');const encrypted=await _encrypt(frozen,aesKey,iv);console.log('[BUILD] Encrypted size:',encrypted.length,'bytes');const manifest={nectar:'2.1.0',created:new Date().toISOString(),realm_hash:realmHash,vault:{algorithm:'AES-256-GCM',kdf:'PBKDF2-SHA256',iterations:10000,iv:_b64e(iv),salt:_b64e(salt),file_key:_b64e(new Uint8Array([(fileKey>>>8)&0xFF,fileKey&0xFF])),encrypted_realm:_b64e(encrypted)},payload:{blueprints:Object.fromEntries(_blueprints),sequences:Object.fromEntries(_sequences),events:Object.fromEntries(_events)}};const manifestHash=await _sha256(JSON.stringify(manifest));const userKeyObj={type:'nectar-user-key',version:'2.1.0',created:manifest.created,user_key:_b64e(new Uint8Array([(userKey>>>8)&0xFF,userKey&0xFF])),manifest_hash:manifestHash};console.log('[BUILD] Complete.');return{manifest,userKey:userKeyObj};};
+const _consume=async(manifest,userKeyObj)=>{const fkb=_b64d(manifest.vault.file_key);const ukb=_b64d(userKeyObj.user_key);const fk=(fkb[0]<<8)|fkb[1];const uk=(ukb[0]<<8)|ukb[1];const full=(fk<<16)|uk;const salt=_b64d(manifest.vault.salt);const iv=_b64d(manifest.vault.iv);const enc=_b64d(manifest.vault.encrypted_realm);try{const k=await _deriveKey(full,salt);const frozen=await _decrypt(enc,k,iv);const hash=await _sha256(frozen);if(hash!==manifest.realm_hash)return null;_thaw(frozen);if(manifest.payload.blueprints)Object.entries(manifest.payload.blueprints).forEach(([k,v])=>_blueprints.set(k,v));if(manifest.payload.sequences)Object.entries(manifest.payload.sequences).forEach(([k,v])=>_sequences.set(k,v));_scepter=Symbol('scepter');return{type:'mead',loaded:true,scepter:_scepter};}catch(e){return null;}};
+const _dissolve=(s)=>{if(!_verify(s))return false;_fwd.clear();_rev.clear();_blueprints.clear();_sequences.clear();_events.clear();_scepter=null;_inventoried=false;return true;};
+const _hydrateBp=(s,name)=>{if(!_verify(s))return null;const bp=_blueprints.get(name);if(!bp)return null;return _hydrate(s,bp.template);};
+return Object.freeze({knock:_knock,verify:_verify,tokenize:_tokenize,hydrate:_hydrate,hydrateBp:_hydrateBp,compile:_compile,sequence:_sequence,build:_build,load:_consume,dissolve:_dissolve});
+})();
+g.Nectar={sovereign:{knock:(c)=>_realm.knock(c),compile:(s,n,t,a)=>_realm.compile(s,n,t,a),sequence:(s,n,st)=>_realm.sequence(s,n,st),tokenize:(s,str)=>_realm.tokenize(s,str),hydrate:(s,ids)=>_realm.hydrate(s,ids),hydrateBp:(s,n)=>_realm.hydrateBp(s,n),build:(s)=>_realm.build(s),load:(m,u)=>_realm.knock({auth:true,manifest:m,userKey:u}),dissolve:(s)=>_realm.dissolve(s)},version:'2.1.0'};
+})(window);
+</script>
+
+<script>
+// GOOGLE DEFAULT HTML
+const GOOGLE_DEFAULT = `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta content="width=device-width,minimum-scale=1.0" name="viewport"><title>Google</title><style>body{font-family:arial,sans-serif;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#fff}.logo{width:272px;height:92px;margin-bottom:20px;background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 272 92"><text x="0" y="70" font-size="80" font-family="Arial" font-weight="bold"><tspan fill="%234285F4">G</tspan><tspan fill="%23EA4335">o</tspan><tspan fill="%23FBBC05">o</tspan><tspan fill="%234285F4">g</tspan><tspan fill="%2334A853">l</tspan><tspan fill="%23EA4335">e</tspan></text></svg>') center/contain no-repeat}.search-box{display:flex;flex-direction:column;align-items:center;width:100%;max-width:584px;padding:0 16px}.search-input{width:100%;height:44px;border:1px solid #dfe1e5;border-radius:24px;padding:0 20px;font-size:16px;outline:none}.search-input:hover,.search-input:focus{box-shadow:0 1px 6px rgba(32,33,36,.28);border-color:rgba(223,225,229,0)}.buttons{margin-top:18px;display:flex;gap:12px}.buttons button{background:#f8f9fa;border:1px solid #f8f9fa;border-radius:4px;color:#3c4043;font-size:14px;padding:10px 16px;cursor:pointer}.buttons button:hover{border:1px solid #dadce0;box-shadow:0 1px 1px rgba(0,0,0,.1)}.footer{position:fixed;bottom:0;width:100%;background:#f2f2f2;font-size:13px;color:#70757a;padding:15px 30px;display:flex;justify-content:space-between}.footer a{color:#70757a;text-decoration:none;margin:0 10px}</style></head><body><div class="logo"></div><div class="search-box"><input class="search-input" type="text" placeholder="Search Google or type a URL" autofocus><div class="buttons"><button>Google Search</button><button>I'm Feeling Lucky</button></div></div><div class="footer"><div><a href="#">About</a><a href="#">Advertising</a><a href="#">Business</a><a href="#">How Search works</a></div><div><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Settings</a></div></div></body></html>`;
+
+// Set default in textarea
+document.getElementById('html-input').value = GOOGLE_DEFAULT;
+
+let STORED_MANIFEST = null;
+let STORED_USER_KEY = null;
+let STORED_AUTOGENESIS = null;
+let COMPILED_HTML = null;
+
+async function compileHTML() {
+  const htmlInput = document.getElementById('html-input').value.trim();
+  if (!htmlInput) {
+    console.error('No HTML to compile');
+    return;
+  }
+  COMPILED_HTML = htmlInput;
+  
+  console.info('═══ COMPILING HTML ═══');
+  
+  const scepter = await Nectar.sovereign.knock({ auth: true });
+  console.log('[KNOCK] Scepter acquired');
+  
+  console.log('[COMPILE] Tokenizing HTML...');
+  console.log('[COMPILE] Input size:', htmlInput.length, 'bytes');
+  
+  const blueprint = Nectar.sovereign.compile(scepter, 'COMPILED_PAGE', htmlInput, {});
+  console.log('[COMPILE] Blueprint ID:', blueprint.id);
+  console.log('[COMPILE] Token count:', blueprint.template.length);
+  
+  Nectar.sovereign.sequence(scepter, 'RENDER_PAGE', [
+    { call: 'COMPILED_PAGE', props: {} }
+  ]);
+  
+  console.log('[BUILD] Building artifacts...');
+  const artifacts = await Nectar.sovereign.build(scepter);
+  
+  STORED_MANIFEST = artifacts.manifest;
+  STORED_USER_KEY = artifacts.userKey;
+  
+  // Generate self-unlocking HTML
+  STORED_AUTOGENESIS = generateAutogenesisHTML(artifacts.manifest, artifacts.userKey.user_key);
+  
+  Nectar.sovereign.dissolve(scepter);
+  console.log('[DISSOLVE] Session terminated');
+  
+  // Stats
+  const manifestSize = JSON.stringify(artifacts.manifest).length;
+  const tokenCount = artifacts.manifest.payload.blueprints.COMPILED_PAGE.template.length;
+  document.getElementById('stats').innerHTML = `
+    <strong>Compiled.</strong> 
+    Original: ${htmlInput.length} bytes | 
+    Tokens: ${tokenCount} | 
+    Manifest: ${manifestSize} bytes | 
+    User Key: ${artifacts.userKey.user_key}
+  `;
+  
+  document.getElementById('output').style.display = 'block';
+  document.getElementById('user-key-output').value = JSON.stringify(artifacts.userKey, null, 2);
+  document.getElementById('btn-download').disabled = false;
+  document.getElementById('btn-test').disabled = false;
+  
+  console.info('═══ COMPILATION COMPLETE ═══');
+  console.log('User Key (B64):', artifacts.userKey.user_key);
+}
+
+function generateAutogenesisHTML(manifest, userKeyB64) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NECTAR Autogenesis | Encrypted Content</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;color:#eee;font-family:system-ui;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.unlock-panel{background:#1a1a2e;padding:2rem;border-radius:8px;text-align:center;max-width:400px}
+.unlock-panel h1{color:#00d9ff;margin-bottom:1rem;font-size:1.25rem}
+.unlock-panel p{color:#888;font-size:0.8rem;margin-bottom:1rem}
+.unlock-panel input{width:100%;padding:0.75rem;background:#0a0a12;border:1px solid #333;color:#0f0;font-family:monospace;margin-bottom:1rem;border-radius:4px}
+.unlock-panel button{background:#00d9ff;color:#000;border:none;padding:0.75rem 2rem;cursor:pointer;font-family:monospace;border-radius:4px;width:100%}
+.unlock-panel button:hover{background:#fff}
+.status{margin-top:1rem;font-size:0.75rem;color:#888}
+#content{display:none;width:100%;height:100vh}
+#content iframe{width:100%;height:100%;border:none}
+</style>
+</head>
+<body>
+<div class="unlock-panel" id="unlock-panel">
+<h1>🔐 NECTAR AUTOGENESIS</h1>
+<p>This page contains encrypted content compiled by the Sovereign Compiler.<br>Enter your user key to unlock.</p>
+<input type="text" id="key-input" placeholder="Enter user key (base64)" value="${userKeyB64}">
+<button onclick="unlock()">Unlock</button>
+<div class="status" id="status">Manifest loaded. Awaiting key.</div>
+</div>
+<div id="content"><iframe id="render-frame"></iframe></div>
+
+<script>
+const MANIFEST=${JSON.stringify(manifest)};
+const _b64d=(str)=>new Uint8Array(atob(str).split('').map(c=>c.charCodeAt(0)));
+const _hex=(bytes)=>[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');
+const _sha256=async(data)=>{const enc=new TextEncoder();const buf=await crypto.subtle.digest('SHA-256',enc.encode(data));return _hex(new Uint8Array(buf));};
+const _deriveKey=async(c,s)=>{const e=new TextEncoder();const k=await crypto.subtle.importKey('raw',e.encode(c.toString(16).padStart(8,'0')),'PBKDF2',false,['deriveBits','deriveKey']);return await crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:10000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);};
+const _decrypt=async(ct,key,iv)=>{const d=new TextDecoder();const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,ct);return d.decode(pt);};
+
+async function unlock(){
+  const status=document.getElementById('status');
+  const keyInput=document.getElementById('key-input').value.trim();
+  if(!keyInput){status.textContent='Error: No key provided';return;}
+  
+  status.textContent='Decrypting realm...';
+  
+  try{
+    const fkb=_b64d(MANIFEST.vault.file_key);
+    const ukb=_b64d(keyInput);
+    const fk=(fkb[0]<<8)|fkb[1];
+    const uk=(ukb[0]<<8)|ukb[1];
+    const full=(fk<<16)|uk;
+    
+    const salt=_b64d(MANIFEST.vault.salt);
+    const iv=_b64d(MANIFEST.vault.iv);
+    const enc=_b64d(MANIFEST.vault.encrypted_realm);
+    
+    const aesKey=await _deriveKey(full,salt);
+    const frozen=await _decrypt(enc,aesKey,iv);
+    
+    status.textContent='Verifying hash...';
+    const hash=await _sha256(frozen);
+    if(hash!==MANIFEST.realm_hash){status.textContent='Error: Hash mismatch. Wrong key or corrupted data.';return;}
+    
+    status.textContent='Thawing realm...';
+    const realm=JSON.parse(frozen);
+    const revMap=new Map(realm.rev);
+    
+    status.textContent='Hydrating blueprint...';
+    const bp=MANIFEST.payload.blueprints.COMPILED_PAGE;
+    const html=bp.template.map(id=>{
+      if(typeof id==='string'&&id.startsWith('c:'))return String.fromCharCode(parseInt(id.slice(2)));
+      const real=revMap.get(id);
+      return real?real.split(':')[1]:'';
+    }).join('');
+    
+    status.textContent='Rendering...';
+    document.getElementById('unlock-panel').style.display='none';
+    document.getElementById('content').style.display='block';
+    const frame=document.getElementById('render-frame');
+    frame.srcdoc=html;
+    
+  }catch(e){
+    status.textContent='Error: Decryption failed. Invalid key.';
+    console.error(e);
+  }
+}
+<\\/script>
+</body>
+</html>`;
+}
+
+function downloadAutogenesis() {
+  if (!STORED_AUTOGENESIS) return;
+  const blob = new Blob([STORED_AUTOGENESIS], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'autogenesis.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  console.log('[DOWNLOAD] Autogenesis HTML saved');
+}
+
+async function testUnlock() {
+  if (!STORED_MANIFEST || !STORED_USER_KEY) return;
+  console.info('═══ TESTING UNLOCK ═══');
+  
+  const scepter = await Nectar.sovereign.load(STORED_MANIFEST, STORED_USER_KEY);
+  if (!scepter) {
+    console.error('[TEST] Load failed');
+    return;
+  }
+  console.log('[TEST] Realm restored');
+  
+  const html = Nectar.sovereign.hydrateBp(scepter, 'COMPILED_PAGE');
+  if (html) {
+    console.log('[TEST] Hydration successful. Length:', html.length);
+    document.getElementById('render-frame').style.display = 'block';
+    document.getElementById('render-frame').srcdoc = html;
+    console.info('═══ RENDERED ═══');
+  } else {
+    console.error('[TEST] Hydration failed');
+  }
+  
+  Nectar.sovereign.dissolve(scepter);
+}
+
+// Sidebar + dark mode controls
+const btnSide=document.getElementById('btnSide'),btnTop=document.getElementById('btnTop'),btnDown=document.getElementById('btnDown'),sUp=document.getElementById('sUp'),sDn=document.getElementById('sDn'),dark=document.getElementById('dark');
+let open=false;
+function setSidebar(v){open=!!v;document.documentElement.style.setProperty('--sideOpen',open?'var(--side)':'0px');}
+function scrollByPage(dir){window.scrollBy({top:Math.max(240,Math.floor(window.innerHeight*0.86))*dir,behavior:'smooth'});}
+function setDark(v){document.body.classList.toggle('dark',!!v);try{localStorage.setItem('NW_DARK',v?'1':'0');}catch(e){}}
+try{const saved=localStorage.getItem('NW_DARK');if(saved==='1'){dark.checked=true;setDark(true);}}catch(e){}
+btnSide.addEventListener('click',()=>setSidebar(!open));
+btnTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+btnDown.addEventListener('click',()=>scrollByPage(1));
+sUp.addEventListener('click',()=>scrollByPage(-1));
+sDn.addEventListener('click',()=>scrollByPage(1));
+dark.addEventListener('change',()=>setDark(dark.checked));
+document.querySelectorAll('aside.side nav a[href^="#"]').forEach(a=>a.addEventListener('click',ev=>{const id=a.getAttribute('href');if(id&&id!=='#'){ev.preventDefault();const el=document.querySelector(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}}));
+setSidebar(false);
+
+console.log('Phantom ETL Compiler ready');
+console.log('Discovered: December 13, 2024 — 8:43 PM PST');
+</script>
+</body>
+</html>
