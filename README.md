@@ -1,6 +1,6 @@
-# Phantom ETL Runtime
+# The Cuncurrent Web 6.0 W3C Submission
 
-## The Normalized Web — Web 6.0
+## The Normalized Web — 
 
 **Discovered: December 13, 2024 — 8:43 PM PST**
 
